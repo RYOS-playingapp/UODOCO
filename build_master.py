@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""船釣り.jp の都県別一覧から東京湾側の船宿マスタ boats.json を生成する。"""
+"""船釣り.jp から東京湾の船宿マスタ boats.json を生成する。"""
 import json
 import re
-import sys
 import time
 import urllib.request
+from collections import Counter
 
-UA = "uodoko-collector/0.1 (personal fishing log aggregator)"
+UA = "Mozilla/5.0 (compatible; uodoko-collector/0.2)"
 
 PREF_URLS = {
     "tokyo": "https://funaduri.jp/pref.cgi?pref=tokyo",
@@ -25,21 +25,17 @@ TOKYO_BAY_AREAS = {
 }
 
 NON_NORIAI = re.compile(
-    r"(シーバス|SEABASS|Sea ?Frog|SEXY|BLUE DOG|BAY WORKS|Bay Fighter|PALLAS|SEAKURO|"
-    r"D-marina|BLEU LANE|Ocean Master|JOY MARINE|VALENTON|SEA WOLF|THE SEA MAN|"
-    r"PLAYFUL|うるとら|プレアデス|アイランドクルーズ|Sunny|Sea floating|TARGET|"
-    r"ファーストヒット|Mothership|ORCA|FriendShip|アップタイド|ベイポイント|シーホース|"
-    r"ピーズ|なぶら|SWEET WATERS|海猫|たけ丸丸|REAL|トレードウインズ|"
-    r"三河屋|縄定|船宿内田|わくわく屋|佃中澤|芝浦石川)", re.I)
+    r"(シーバス|SEABASS|Frog|SEXY|BLUE DOG|BAY WORKS|Fighter|PALLAS|SEAKURO|"
+    r"marina|BLEU|Ocean|JOY|VALENTON|WOLF|SEA MAN|PLAYFUL|うるとら|プレアデス|"
+    r"クルーズ|Sunny|floating|TARGET|ファーストヒット|Mothership|ORCA|FriendShip|"
+    r"アップタイド|ベイポイント|シーホース|ピーズ|なぶら|SWEET|海猫|REAL|"
+    r"トレードウインズ|三河屋|縄定|内田|わくわく屋|佃中澤|芝浦石川|屋形)", re.I)
 
-ROW = re.compile(
-    r"\[(?P<area1>[^\]]+)\]\(https://funaduri\.jp/area\.cgi\?area=[^)]+\)"
-    r"\[(?P<area2>[^\]]+)\]\(https://funaduri\.jp/area\.cgi\?group=[^)]+\)"
-    r"\[(?P<name>[^\]]+)\]\((?P<url>https?://[^)]+)\)"
-)
+A_TAG = re.compile(r'<a\s[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', re.I | re.S)
+TAGS = re.compile(r"<[^>]+>")
 
 
-def fetch(url: str) -> str:
+def fetch(url):
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=30) as r:
         raw = r.read()
@@ -51,60 +47,41 @@ def fetch(url: str) -> str:
     return raw.decode("utf-8", "replace")
 
 
-def html_to_rows(html: str):
-    text = re.sub(r"<a[^>]+href=[\"'](?P<u>[^\"']+)[\"'][^>]*>(?P<t>.*?)</a>",
-                  lambda m: f'[{re.sub(r"<[^>]+>", "", m.group("t")).strip()}]({m.group("u")})',
-                  html, flags=re.S | re.I)
-    text = re.sub(r"<li[^>]*>", "\n", text, flags=re.I)
-    text = re.sub(r"<[^>]+>", "", text)
-    return text.split("\n")
-
-
-def pre_detect(url: str) -> str:
-    u = url.lower()
-    if "gyo.ne.jp" in u: return "gyo"
-    if "ggnet.co.jp" in u: return "ggnet"
-    if "chowari.jp" in u: return "chowari"
-    if "fishing-v.jp" in u: return "fv"
-    return "own"
-
-
 def build():
     boats, seen = [], set()
     for pref, url in PREF_URLS.items():
-        html = fetch(url)
-        for line in html_to_rows(html):
-            m = ROW.search(line)
-            if not m:
+        try:
+            html = fetch(url)
+        except Exception as e:
+            print(f"  {pref}: 取得失敗 {e}")
+            continue
+
+        # ページ内の <a> をすべて拾い、area.cgi?group= の直後に来る外部リンクを宿とみなす
+        links = []
+        for m in A_TAG.finditer(html):
+            href = m.group(1)
+            text = TAGS.sub("", m.group(2)).strip()
+            links.append((href, text))
+
+        cur_area = None
+        n0 = len(boats)
+        for href, text in links:
+            if "area.cgi?group=" in href:
+                cur_area = text
                 continue
-            area2 = m.group("area2").strip()
-            if area2 not in TOKYO_BAY_AREAS:
+            if "area.cgi?area=" in href:
                 continue
-            name = m.group("name").strip()
-            site = m.group("url").strip()
-            if (name, area2) in seen:
+            if not href.startswith("http"):
                 continue
-            seen.add((name, area2))
+            if "funaduri.jp" in href:
+                continue
+            if not cur_area or cur_area not in TOKYO_BAY_AREAS:
+                continue
+            name = text
+            if not name or len(name) > 30:
+                continue
+            if (name, cur_area) in seen:
+                continue
+            seen.add((name, cur_area))
             boats.append({
-                "id": f"{pref[:2]}-{len(boats)+1:03d}",
-                "name": name,
-                "pref": pref,
-                "area": area2,
-                "region": m.group("area1").strip(),
-                "site": site,
-                "platform": pre_detect(site),
-                "noriai_likely": not bool(NON_NORIAI.search(name)),
-                "catch_url": None,
-            })
-        time.sleep(1.5)
-    return boats
-
-
-if __name__ == "__main__":
-    boats = build()
-    from collections import Counter
-    print("取得件数:", len(boats), dict(Counter(b["pref"] for b in boats)))
-    print("乗合候補:", sum(1 for b in boats if b["noriai_likely"]))
-    with open("boats.json", "w", encoding="utf-8") as f:
-        json.dump(boats, f, ensure_ascii=False, indent=1)
-    print("-> boats.json")
+                "id
