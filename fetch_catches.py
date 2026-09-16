@@ -62,38 +62,48 @@ def html_to_text(html: str) -> str:
 
 
 def catch_urls(boat: dict, days: int):
-    pf, site = boat.get("platform"), boat.get("site") or ""
-    urls = []
+    site = boat.get("site") or ""
+    pf = boat.get("platform")
     if boat.get("catch_url"):
         return [boat["catch_url"]]
 
+    root = re.match(r"(https?://[^/]+)", site)
+    root = root.group(1) if root else site
+    urls = []
+
     if pf == "gyo":
         m = re.search(r"CID-([A-Za-z0-9_]+)", site)
+        if not m:
+            m = re.search(r"gyo\.ne\.jp/([A-Za-z0-9_]+)/", site)
         if m:
             cid = m.group(1)
-            urls.append(f"https://www.gyo.ne.jp/rep_tsuri_view|CID-{cid}.htm")
+            urls.append("https://www.gyo.ne.jp/rep_tsuri_view|CID-%s.htm" % cid)
             base = date.today()
             for i in range(1, days + 1):
                 d = base - timedelta(days=i)
-                urls.append(
-                    "https://www.gyo.ne.jp/rep_tsuri_history_view"
-                    f"|CID-{cid}|hdt-{d:%Y/%m/%d}|dt-{base:%Y/%m/%d}.htm")
+                urls.append("https://www.gyo.ne.jp/rep_tsuri_history_view|CID-%s|hdt-%s|dt-%s.htm"
+                            % (cid, d.strftime("%Y/%m/%d"), base.strftime("%Y/%m/%d")))
         else:
             urls.append(site)
 
     elif pf == "gyosan":
-        root = re.match(r"(https?://[^/]+)", site)
-        root = root.group(1) if root else site
-        ym, seen = date.today(), set()
+        ym = date.today()
         for _ in range(max(1, days // 28 + 1)):
-            key = f"{ym:%Y%m}"
-            if key not in seen:
-                urls.append(f"{root}/search/Archive/{key}/")
-                seen.add(key)
-            ym = (ym.replace(day=1) - timedelta(days=1))
+            urls.append("%s/search/Archive/%s/" % (root, ym.strftime("%Y%m")))
+            ym = ym.replace(day=1) - timedelta(days=1)
+
+    elif pf == "chowari":
+        m = re.search(r"/ship/(\d+)", site)
+        if m:
+            urls.append("https://www.chowari.jp/ship/%s/catch/" % m.group(1))
+        else:
+            urls.append(site)
 
     else:
-        urls.append(site)
+        # 独自サイト: 釣果ページによくあるパスを順に試す
+        for path in ("", "/blog/", "/results/", "/resuits/", "/choka/", "/chouka/",
+                     "/catch/", "/report/", "/news/", "/tyouka/", "/turikahou/"):
+            urls.append(root + path)
 
     return urls
 
