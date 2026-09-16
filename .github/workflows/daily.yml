@@ -1,0 +1,38 @@
+name: daily-catch-collect
+
+on:
+  schedule:
+    - cron: "30 12 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "さかのぼる日数"
+        default: "7"
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 宿マスタが無ければ作る
+        run: |
+          if [ ! -f boats.json ]; then python build_master.py; fi
+
+      - name: 釣果を収集
+        run: python fetch_catches.py --days ${{ github.event.inputs.days || 7 }}
+
+      - name: 結果をコミット
+        run: |
+          git config user.name  "uodoko-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add boats.json catches.json
+          git diff --cached --quiet || git commit -m "catches: $(date +%F)"
+          git push
