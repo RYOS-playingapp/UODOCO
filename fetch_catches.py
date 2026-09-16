@@ -118,7 +118,7 @@ def collect(boats, days=3, only=None):
         if not b.get("noriai_likely", True):
             continue
         try:
-            if not b.get("platform") or b.get("platform") == "own":
+            if not b.get("platform") or b.get("platform"):
                 try:
                     html = fetch(b["site"])
                     time.sleep(SLEEP)
