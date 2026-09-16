@@ -22,10 +22,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: 宿マスタが無ければ作る
-        run: |
-          if [ ! -f boats.json ]; then python build_master.py; fi
-
       - name: 釣果を収集
         run: python fetch_catches.py --days ${{ github.event.inputs.days || 7 }}
 
