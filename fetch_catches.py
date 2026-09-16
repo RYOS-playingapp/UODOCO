@@ -64,6 +64,8 @@ def html_to_text(html: str) -> str:
 def catch_urls(boat: dict, days: int):
     pf, site = boat.get("platform"), boat.get("site") or ""
     urls = []
+      if boat.get("catch_url"):
+        return [boat["catch_url"]]
 
     if pf == "gyo":
         m = re.search(r"CID-([A-Za-z0-9_]+)", site)
