@@ -181,4 +181,5 @@ if __name__ == "__main__":
 
     old = []
     if os.path.exists("catches.json"):
-        old = json.load(open("catches.json",
+                old = json.load(open("catches.json", encoding="utf-8"))
+
