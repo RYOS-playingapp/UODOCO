@@ -29,6 +29,6 @@ jobs:
         run: |
           git config user.name  "uodoko-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add boats.json catches.json
-          git diff --cached --quiet || git commit -m "catches: $(date +%F)"
-          git push
+          git add -A
+          git diff --cached --quiet || git commit -m "catches"
+          git push || true
