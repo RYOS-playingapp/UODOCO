@@ -1,7 +1,7 @@
 [
-{"id":"b001","name":"進丸","area":"金沢漁港","site":"https://susumumaru.com/","catch_url":"https://susumumaru.com/blog/","noriai_likely":true},
-{"id":"b002","name":"蒲谷丸","area":"金沢漁港","site":"https://kabayamaru.com/","catch_url":"https://kabayamaru.com/resuits/","noriai_likely":true},
-{"id":"b003","name":"忠彦丸","area":"金沢漁港","site":"https://www.tadahikomaru.jp/","catch_url":"https://www.tadahikomaru.jp/search/Archive/202609/","noriai_likely":true},
-{"id":"b004","name":"一之瀬丸","area":"金沢八景","site":"https://www.ichinosemaru.com/","catch_url":"https://www.gyo.ne.jp/rep_tsuri_view|CID-ichinose.htm","noriai_likely":true},
-{"id":"b005","name":"米元釣船店","area":"金沢八景","site":"https://www.gyo.ne.jp/yonemoto/","catch_url":"https://www.gyo.ne.jp/rep_tsuri_view|CID-yonemoto.htm","noriai_likely":true}
+{"id":"b001","name":"進丸","area":"金沢漁港","site":"https://susumumaru.com/","catch_url":"https://susumumaru.com/blog/","platform":"own","noriai_likely":true},
+{"id":"b002","name":"蒲谷丸","area":"金沢漁港","site":"https://kabayamaru.com/","catch_url":"https://kabayamaru.com/resuits/","platform":"own","noriai_likely":true},
+{"id":"b003","name":"忠彦丸","area":"金沢漁港","site":"https://www.tadahikomaru.jp/","platform":"gyosan","noriai_likely":true},
+{"id":"b004","name":"一之瀬丸","area":"金沢八景","site":"https://www.gyo.ne.jp/rep_tsuri_view|CID-ichinose.htm","platform":"gyo","noriai_likely":true},
+{"id":"b005","name":"米元釣船店","area":"金沢八景","site":"https://www.gyo.ne.jp/rep_tsuri_view|CID-yonemoto.htm","platform":"gyo","noriai_likely":true}
 ]
